@@ -1,21 +1,21 @@
+#!/usr/bin/env python3
+
 """Contains comment watcher code"""
 
-from transcriber_bot.config import Config
+import config
 import praw
 
 COMMENT_COMMAND = "Transcribe!"
 
-queue = []
-
 def main():
     """Watches reddit comments"""
-    reddit = praw.Reddit(client_id=Config.CLIENT_ID,
-                         client_secret=Config.CLIENT_SECRET,
-                         user_agent=Config.USER_AGENT,
-                         username=Config.USERNAME,
-                         password=Config.PASSWORD)
+    reddit = praw.Reddit(client_id=config.CLIENT_ID,
+                         client_secret=config.CLIENT_SECRET,
+                         user_agent=config.USER_AGENT,
+                         username=config.USERNAME,
+                         password=config.PASSWORD)
 
-    subreddit_list = Config.SUBREDDIT_LIST
+    subreddit_list = config.SUBREDDIT_LIST
 
     # if no subreddits to watch, end comment_watcher
     if not subreddit_list:
@@ -26,15 +26,16 @@ def main():
     for i in range(1, len(subreddit_list)):
         subreddit_stream += "+{subreddit}".format(subreddit=subreddit_list[i])
 
-    comments = reddit.subreddit(subreddit_stream).stream.comments()
+    subreddits = reddit.subreddit(subreddit_stream).stream
 
     # loop through comment stream
-    for comment in comments:
-        if comment.body == COMMENT_COMMAND:
-            # TODO: add item with comment object. look at comment.submission's
-            # image and reply to comment object
-            # queue.push()
-            pass
+    for submission in subreddits.submissions():
+        print(submission.url)
+        # if submission.body == COMMENT_COMMAND:
+        # TODO: add item with comment object. look at comment.submission's
+        # image and reply to comment object
+        # queue.push()
+        # pass
 
 if __name__ == '__main__':
     main()
