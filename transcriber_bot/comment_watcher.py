@@ -3,7 +3,11 @@
 from transcriber_bot.config import Config
 import praw
 
-def comment_watcher():
+COMMENT_COMMAND = "Transcribe!"
+
+queue = []
+
+def main():
     """Watches reddit comments"""
     reddit = praw.Reddit(client_id=Config.CLIENT_ID,
                          client_secret=Config.CLIENT_SECRET,
@@ -20,9 +24,17 @@ def comment_watcher():
     # otherwise create subreddits stream string
     subreddit_stream = subreddit_list[0]
     for i in range(1, len(subreddit_list)):
-        subreddit_stream += "+{subreddit}".format(subreddit_list[i])
+        subreddit_stream += "+{subreddit}".format(subreddit=subreddit_list[i])
 
-    stream = praw.helpers.comment_stream(r, subreddit_stream, limit=None)
+    comments = reddit.subreddit(subreddit_stream).stream.comments()
 
-    for comment in reddit.subreddit(Config.SUBREDDIT_LIST).stream.comments():
-        print(comment)
+    # loop through comment stream
+    for comment in comments:
+        if comment.body == COMMENT_COMMAND:
+            # TODO: add item with comment object. look at comment.submission's
+            # image and reply to comment object
+            # queue.push()
+            pass
+
+if __name__ == '__main__':
+    main()
