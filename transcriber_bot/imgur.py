@@ -5,6 +5,7 @@ import requests
 
 MAX_TIMEOUT = 10 # 10 second timeout
 MAX_IMAGE_COUNT = 10 # only 10 images allowed to be parsed by bot
+IMGUR_URL = "https://imgur.com/"
 
 def get_imgur_data(imgur_url):
     """get imgur json data from imgur url
@@ -26,6 +27,9 @@ def get_imgur_data(imgur_url):
     except json.decoder.JSONDecodeError:
         # if images is invalid, print out statement and return empty list
         print("Invalid JSON data")
+    except BaseException as error:
+        print("Base exception: {error}".format(error=error))
+
     return None
 
 def get_imgur_url(imgur_image):
@@ -54,8 +58,9 @@ def get_imgur_url(imgur_image):
 
     # checks if the imgur image object has a "hash" and "ext" within it
     if imgur_hash and imgur_ext:
-        return "https://imgur.com/{hash}{ext}".format(hash=imgur_hash,
-                                                      ext=imgur_ext)
+        return "{url}{hash}{ext}".format(url=IMGUR_URL,
+                                         hash=imgur_hash,
+                                         ext=imgur_ext)
 
     # otherwise return None if canot create imgur object
     return None
@@ -100,6 +105,7 @@ def get_imgur_urls(imgur_url):
     except ValueError:
         # if images is invalid, print out statement and return empty list
         print("Invalid imgur data, ValueError")
-    return []
+    except BaseException as error:
+        print("Base exception: {error}".format(error=error))
 
-print(get_imgur_urls("https://imgur.com/gallery/nHyGiG3"))
+    return []
