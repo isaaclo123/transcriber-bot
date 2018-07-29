@@ -22,15 +22,17 @@ def get_imgur_data(imgur_url):
         return imgur_data
     except requests.Timeout:
         print("Request timed out")
+        return None
     except requests.RequestException:
         print("Internet issue, requests error")
+        return None
     except json.decoder.JSONDecodeError:
         # if images is invalid, print out statement and return empty list
         print("Invalid JSON data")
+        return None
     except BaseException as error:
         print("Base exception: {error}".format(error=error))
-
-    return None
+        return None
 
 def get_imgur_url(imgur_image):
     """returns imgur image link from imgur image object
@@ -102,10 +104,11 @@ def get_imgur_urls(imgur_url):
     except KeyError:
         # if images is invalid, print out statement and return empty list
         print("Invalid imgur data, KeyError")
+        return []
     except ValueError:
         # if images is invalid, print out statement and return empty list
         print("Invalid imgur data, ValueError")
+        return []
     except BaseException as error:
         print("Base exception: {error}".format(error=error))
-
-    return []
+        return []

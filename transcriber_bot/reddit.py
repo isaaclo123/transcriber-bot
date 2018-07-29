@@ -25,12 +25,13 @@ def check_reddit_data(reddit_url):
         return reddit_data.status_code != 404
     except requests.Timeout:
         print("Request timed out")
+        return False
     except requests.RequestException:
         print("Internet issue, requests error")
+        return False
     except BaseException as error:
         print("Base exception: {error}".format(error=error))
-
-    return False
+        return False
 
 def get_reddit_urls(reddit_url):
     """checks if a url is a reddit media link and returns a list with the url/s
