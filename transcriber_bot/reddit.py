@@ -32,8 +32,8 @@ def check_reddit_data(reddit_url):
 
     return False
 
-def get_reddit_url(reddit_url):
-    """checks if a url is a reddit media link
+def get_reddit_urls(reddit_url):
+    """checks if a url is a reddit media link and returns a list with the url/s
 
     :reddit_url: reddit media url
     :returns: list with reddit image, or empty list, if invalid
