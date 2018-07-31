@@ -12,10 +12,19 @@ IMAGE_EXTS = [
     ".gif",
 ]
 
+def is_url_reddit(reddit_url):
+    """check if a url is a reddit url
+
+    :reddit_url: reddit url
+    :returns: boolean that is true if url is reddit url
+
+    """
+    return reddit_url.startswith(REDDIT_URL)
+
 def check_reddit_data(reddit_url):
     """check if reddit url is valid resource
 
-    :reddit_url: imgur url
+    :reddit_url: reddit url
     :returns: boolean that is true if valid
 
     """
@@ -41,7 +50,7 @@ def get_reddit_urls(reddit_url):
 
     """
 
-    if not reddit_url.startswith(REDDIT_URL):
+    if not is_url_reddit(reddit_url):
         # if the url is not a reddit link, return an empty list
         return []
 

@@ -1,11 +1,9 @@
-#!/usr/bin/env python3
+"""Contains OCR code"""
 
-"""Contains comment watcher code"""
-
+from imgur import is_url_imgur, get_imgur_urls
+from reddit import is_url_reddit, get_reddit_urls
 import config
 import praw
-
-COMMENT_COMMAND = "Transcribe!"
 
 def main():
     """Watches reddit comments"""
@@ -17,7 +15,7 @@ def main():
 
     subreddit_list = config.SUBREDDIT_LIST
 
-    # if no subreddits to watch, end comment_watcher
+    # if no subreddits to watch, end program
     if not subreddit_list:
         return
 
@@ -28,14 +26,27 @@ def main():
 
     subreddits = reddit.subreddit(subreddit_stream).stream
 
-    # loop through comment stream
+    # loop through submissions in subreddit stream
     for submission in subreddits.submissions():
-        print(submission.url)
-        # if submission.body == COMMENT_COMMAND:
-        # TODO: add item with comment object. look at comment.submission's
-        # image and reply to comment object
-        # queue.push()
-        # pass
+        url = submission.url
+        print("url: {url}".format(url=url))
+        img_urls = []
+
+        if is_url_imgur(url):
+            # if url is imgur
+            img_urls = get_imgur_urls(url)
+        elif is_url_reddit(url):
+            # if url is reddit
+            img_urls = get_reddit_urls(url)
+        else:
+            # url invalid
+            print("url invalid, skipping")
+            img_urls = []
+
+        if img_urls:
+            # if urls is not empty
+            # TODO: do something with img_urls
+            pass
 
 if __name__ == '__main__':
     main()

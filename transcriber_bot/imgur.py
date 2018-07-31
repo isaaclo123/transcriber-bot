@@ -7,6 +7,15 @@ MAX_TIMEOUT = 10 # 10 second timeout
 MAX_IMAGE_COUNT = 10 # only 10 images allowed to be parsed by bot
 IMGUR_URL = "https://imgur.com/"
 
+def is_url_imgur(imgur_url):
+    """check if a url is an imgur url
+
+    :imgur_url: reddit url
+    :returns: boolean that is true if url is imgur url
+
+    """
+    return imgur_url.startswith(IMGUR_URL)
+
 def get_imgur_data(imgur_url):
     """get imgur json data from imgur url
 
