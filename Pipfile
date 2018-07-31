@@ -16,8 +16,8 @@ pytesseract = "*"
 appdirs = "*"
 setuptools = "*"
 requests = "*"
-pillow = "*"
 opencv-python = "*"
+numpy = "*"
 
 
 [requires]

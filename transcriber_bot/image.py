@@ -1,23 +1,22 @@
 """Contains image handling code"""
 
-from io import BytesIO
-from PIL import Image
 import requests
+import numpy
 import pytesseract
 import cv2
-import os
 
 def get_image(img_url):
     """Gets image from image url
 
     :img_url: image url
-    :returns: returns a PIL Image object
+    :returns: returns a numpy Image
     :throws: RuntimeError indicating that the image could not be used
 
     """
     try:
         response = requests.get(img_url)
-        img = Image.open(BytesIO(response.content))
+        img_arr = numpy.asarray(bytearray(response.content), dtype=numpy.uint8)
+        img = cv2.imdecode(img_arr, -1) # 'Load it as it is'
         return img
     except BaseException as error:
         raise RuntimeError('Image could not be used', error)
@@ -26,7 +25,7 @@ def process_image(img):
     """pre-processes an image for OCR
 
     :img: PIL image
-    :returns: returns a preprocessed PIL image
+    :returns: returns a preprocessed CV2 image
     :throws: RuntimeError indicating that the image could not be used
 
     taken from
@@ -41,13 +40,13 @@ def process_image(img):
         # check to see if we should apply thresholding to preprocess the
         # image
         # if args["preprocess"] == "thresh":
-        processed_img = cv2.threshold(processed_img, 0, 255,
-                                      cv2.THRESH_BINARY | cv2.THRESH_OTSU)[1]
+        # processed_img = cv2.threshold(processed_img, 0, 255,
+        #                              cv2.THRESH_BINARY | cv2.THRESH_OTSU)[1]
 
         # make a check to see if median blurring should be done to remove
         # noise
         # elif args["preprocess"] == "blur":
-        processed_img = cv2.medianBlur(processed_img, 3)
+        # processed_img = cv2.medianBlur(processed_img, 3)
 
         return processed_img
     except BaseException as error:
@@ -56,7 +55,7 @@ def process_image(img):
 def get_processed_image_text(img):
     """gets preprocessed image text with pytessearct OCR
 
-    :img: processed PIL image
+    :img: processed CV2 image
     :returns: a string with the image's text
     :throws: RuntimeError indicating that the image could not be processed
 
@@ -84,7 +83,7 @@ def get_image_text(img_url):
     """
     try:
         img = get_image(img_url)
-        processed_img = get_processed_image_text(img)
+        processed_img = process_image(img)
         img_text = get_processed_image_text(processed_img)
         return img_text
     except BaseException as error:
