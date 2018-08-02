@@ -18,6 +18,7 @@ setuptools = "*"
 requests = "*"
 opencv-python = "*"
 numpy = "*"
+pillow = "*"
 
 
 [requires]

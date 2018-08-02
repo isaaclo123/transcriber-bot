@@ -21,72 +21,112 @@ def get_image(img_url):
     except BaseException as error:
         raise RuntimeError('Image could not be used', error)
 
-def process_image(img):
+def get_processed_image(img):
     """pre-processes an image for OCR
 
     :img: PIL image
     :returns: returns a preprocessed CV2 image
     :throws: RuntimeError indicating that the image could not be used
 
-    taken from
-    https://www.pyimagesearch.com/2017/07/10/using-tesseract-ocr-python/
+    code taken from
+    https://stackoverflow.com/questions/24385714/
+    detect-text-region-in-image-using-opencv#35078614
 
     """
     try:
-        print("preprocessing image")
-        # load the example image and convert it to grayscale
-        processed_img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+        img_gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+        ret, mask = cv2.threshold(img_gray, 180, 255, cv2.THRESH_BINARY) # pylint: disable=unused-variable
+        img_final = cv2.bitwise_and(img_gray, img_gray, mask=mask)
+        # for black text , cv.THRESH_BINARY_INV
+        ret, new_img = cv2.threshold(img_final, 180, 255, cv2.THRESH_BINARY)
 
-        # check to see if we should apply thresholding to preprocess the
-        # image
-        # if args["preprocess"] == "thresh":
-        # processed_img = cv2.threshold(processed_img, 0, 255,
-        #                              cv2.THRESH_BINARY | cv2.THRESH_OTSU)[1]
+        """
+        removing noise
+        """
 
-        # make a check to see if median blurring should be done to remove
-        # noise
-        # elif args["preprocess"] == "blur":
-        # processed_img = cv2.medianBlur(processed_img, 3)
+        # to manipulate the orientation of dilution , large x means
+        # horizonatally dilating  more, large y means vertically dilating more
+        kernel = cv2.getStructuringElement(cv2.MORPH_CROSS, (3, 3))
+        # dilate , more the iteration more the dilation
+        dilated = cv2.dilate(new_img, kernel, iterations=9)
 
-        return processed_img
+        return dilated
     except BaseException as error:
         raise RuntimeError('Image could not be processed', error)
 
-def get_processed_image_text(img):
-    """gets preprocessed image text with pytessearct OCR
+def get_processed_image_text(img): # pylint: disable=too-many-locals
+    """finds blocks of text
 
-    :img: processed CV2 image
-    :returns: a string with the image's text
-    :throws: RuntimeError indicating that the image could not be processed
+    :img: a cv2 image object
+    :returns: a string composed of the text found in the boxes appended together
+    with "\n" characters
+    :throws: RuntimeError indicating that the image could not be used
 
-    taken from
-    https://www.pyimagesearch.com/2017/07/10/using-tesseract-ocr-python/
+    code taken from
+    https://stackoverflow.com/questions/24385714/
+    detect-text-region-in-image-using-opencv#35078614
 
     """
     try:
-        print("parsing text")
-        text = pytesseract.image_to_string(img)
-        return text
+        # preprocess image
+        processed_image = get_processed_image(img)
+
+        # finds image contours
+        image, contours, hierarchy = cv2.findContours(processed_image, # pylint: disable=unused-variable
+                                                      cv2.RETR_EXTERNAL,
+                                                      cv2.CHAIN_APPROX_NONE)
+
+        def _get_contour_text(contour):
+            """helper method for getting a contour's text
+
+            :contour: a cv2 contour object
+            :returns: a contour's text
+
+            """
+            # get rectangle bounding contour
+            [x, y, w, h] = cv2.boundingRect(contour)
+
+            # Don't plot small false positives that aren't text
+            if w < 35 and h < 35:
+                return None
+
+            # add text to final_text
+            cropped_img = img[y : y + h, x : x + w]
+            box_text = pytesseract.image_to_string(cropped_img)
+
+            return box_text
+
+        final_text = ""
+
+        if contours:
+            # fencepost
+            final_text = _get_contour_text(contours[0])
+
+        for i in range(1, len(contours)):
+            # add contour text to final text with newlines
+            box_text = _get_contour_text(contours[i])
+            if box_text:
+                # if there is box text, add it
+                final_text += "\n{}".format(box_text)
+
+        return final_text
     except BaseException as error:
-        raise RuntimeError('Image text OCR failed', error)
+        raise RuntimeError('Image could not be processed', error)
 
 def get_image_text(img_url):
     """gets preprocessed image text with pytessearct OCR
 
     :image_url: image url
     :returns: a string with the image's text
-    :throws: RuntimeError indicating that the image could not be processed
-
-    taken from
-    https://www.pyimagesearch.com/2017/07/10/using-tesseract-ocr-python/
 
     """
     try:
         img = get_image(img_url)
-        processed_img = process_image(img)
-        img_text = get_processed_image_text(processed_img)
+        img_text = get_processed_image_text(img)
         return img_text
     except BaseException as error:
         # if error, return empty string
         print("Base exception: {error}".format(error=error))
         return ""
+
+print(get_image_text("https://imgur.com/I59qHzw.jpg"))
