@@ -6,10 +6,12 @@ from ocr import get_image_text
 import config
 import praw
 
+BOT_HEADER = "#Transcribe_bot\n*****"
 BOT_FOOTER = ("Powered by transcribe_bot. " +
               "[Github](https://github.com/isaaclo123/transcriber_bot)")
+NO_TEXT_FOUND = "*No text found*"
 
-def result_text_add(text, count):
+def format_reddit_text(text, count):
     """Add to result text
 
     :text: text to add to a comment
@@ -21,18 +23,39 @@ def result_text_add(text, count):
     if len(text) <= 1 or text.isspace():
         # if the text length is too short or blank
         # return "no text found"
-        return "##{header}\n*No text found*\n\n".format(header=count)
+        return "##{header}\n{message}\n\n".format(header=count,
+                                                  message=NO_TEXT_FOUND)
 
-    # remove text trailing newline if it exists
-    if text[-2:] == "\n":
-        text = text[:-2]
+    # remove text leading and trailing whitespace if they exist
+    text = text.lstrip().rstrip()
 
-    # add quotes after all newlines and adds quote to first line
-    # ex: "hi\nbye" turns into ">hi\n>bye"
-    text = text.replace("\n", "\n>")
-    text = text.replace("\n", "\n>")
-    # adds header to beginning and newline to end
-    return "##{header}\n>{text}\n\n".format(header=count, text=text)
+    # split text into lines
+    text_lines = text.splitlines()
+
+    print(text_lines)
+
+    final_text = "##{header}\n>".format(header=count)
+    prev_is_space = False
+
+    for line in text_lines:
+        if line.isspace():
+            if prev_is_space:
+                # if the previous line is whitespace, skip
+                continue
+            else:
+                # add a single newline and set prev_is_space to true
+                prev_is_space = True
+                final_text += "\n>"
+        else:
+            # if the previous line is not whitespace, add a space and the line
+            # set prev_is_space to false
+            final_text += " {}".format(line)
+            prev_is_space = False
+
+    # add a final 2 newlines
+    final_text += "\n\n"
+
+    return final_text
 
 def main():
     """Watches reddit comments"""
@@ -74,17 +97,17 @@ def main():
 
         print(img_urls)
 
-        result_text = ""
+        result_text = "{}\n".format(BOT_HEADER)
 
         if img_urls:
             # if urls is not empty
             url_count = 1
             for url in img_urls:
                 url_text = get_image_text(url)
-                result_text += result_text_add(url_text, url_count)
+                result_text += format_reddit_text(url_text, url_count)
                 url_count += 1
         else:
-            result_text = "*No text found*"
+            result_text = NO_TEXT_FOUND
 
         result_text += BOT_FOOTER
 
