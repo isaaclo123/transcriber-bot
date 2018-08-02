@@ -1,4 +1,4 @@
-"""Contains image handling code"""
+"""Contains image handling and OCR code"""
 
 import requests
 import numpy
@@ -29,8 +29,7 @@ def get_processed_image(img):
     :throws: RuntimeError indicating that the image could not be used
 
     code taken from
-    https://stackoverflow.com/questions/24385714/
-    detect-text-region-in-image-using-opencv#35078614
+    https://stackoverflow.com/questions/24385714/detect-text-region-in-image-using-opencv#35078614
 
     """
     try:
@@ -40,13 +39,16 @@ def get_processed_image(img):
         # for black text , cv.THRESH_BINARY_INV
         ret, new_img = cv2.threshold(img_final, 180, 255, cv2.THRESH_BINARY)
 
+
         """
         removing noise
         """
 
+
         # to manipulate the orientation of dilution , large x means
         # horizonatally dilating  more, large y means vertically dilating more
         kernel = cv2.getStructuringElement(cv2.MORPH_CROSS, (3, 3))
+
         # dilate , more the iteration more the dilation
         dilated = cv2.dilate(new_img, kernel, iterations=9)
 
@@ -94,6 +96,10 @@ def get_processed_image_text(img): # pylint: disable=too-many-locals
             cropped_img = img[y : y + h, x : x + w]
             box_text = pytesseract.image_to_string(cropped_img)
 
+            # Don't return string if it is only whitespace
+            if box_text.isspace():
+                return None
+
             return box_text
 
         final_text = ""
@@ -107,6 +113,9 @@ def get_processed_image_text(img): # pylint: disable=too-many-locals
             box_text = _get_contour_text(contours[i])
             if box_text:
                 # if there is box text, add it
+                # remove excess newlines
+                # try to deal with this later \r\n \r\n
+                # box_text = box_text.replace("\r\n\n", "").replace("\n\n", "")
                 final_text += "\n{}".format(box_text)
 
         return final_text
