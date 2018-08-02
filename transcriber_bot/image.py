@@ -128,5 +128,3 @@ def get_image_text(img_url):
         # if error, return empty string
         print("Base exception: {error}".format(error=error))
         return ""
-
-print(get_image_text("https://imgur.com/I59qHzw.jpg"))
