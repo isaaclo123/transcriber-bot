@@ -104,19 +104,14 @@ def get_processed_image_text(img): # pylint: disable=too-many-locals
 
         final_text = ""
 
-        if contours:
-            # fencepost
-            final_text = _get_contour_text(contours[0])
-
-        for i in range(1, len(contours)):
+        for contour in contours:
             # add contour text to final text with newlines
-            box_text = _get_contour_text(contours[i])
+            box_text = _get_contour_text(contour)
             if box_text:
                 # if there is box text, add it
-                # remove excess newlines
-                # try to deal with this later \r\n \r\n
-                # box_text = box_text.replace("\r\n\n", "").replace("\n\n", "")
-                final_text += "\n{}".format(box_text)
+                final_text += "{}\n".format(box_text)
+        # remove excess newlines
+        final_text = final_text.lstrip().rstrip()
 
         return final_text
     except BaseException as error:
@@ -134,6 +129,6 @@ def get_image_text(img_url):
         img_text = get_processed_image_text(img)
         return img_text
     except BaseException as error:
-        # if error, return empty string
+        # if error, return None
         print("Base exception: {error}".format(error=error))
-        return ""
+        return None

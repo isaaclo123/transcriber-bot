@@ -6,23 +6,25 @@ from ocr import get_image_text
 import config
 import praw
 
-BOT_HEADER = "##Transcriber_bot\n*****"
+# BOT_HEADER = "###Transcriber_bot"
 BOT_FOOTER = ("Powered by transcriber_bot. " +
               "[Github](https://github.com/isaaclo123/transcriber_bot)")
 NO_TEXT_FOUND = "*No text found*"
+DEBUG = True
 
 def format_reddit_text(text):
     """Add to result text
 
     :text: text to add to a comment
-    :returns: formatted text to add to a result
+    :returns: formatted text to add to a result, or None
 
     """
 
-    if len(text) <= 1 or text.isspace():
+    if not text or len(text) <= 1 or text.isspace():
         # if the text length is too short or blank
-        # return "no text found"
-        return "{message}\n\n".format(message=NO_TEXT_FOUND)
+        # return no text found message
+        # return "{message}\n\n".format(message=NO_TEXT_FOUND)
+        return None
 
     # remove text leading and trailing whitespace if they exist
     text = text.lstrip().rstrip()
@@ -30,21 +32,17 @@ def format_reddit_text(text):
     # split text into lines
     text_lines = text.splitlines()
 
-    print(text_lines)
-
     final_text = ">"
     prev_is_space = False
 
     for line in text_lines:
-        if line.isspace():
+        if line == "" or line.isspace():
+            # if the current line is whitespace
             if prev_is_space:
-                # if the previous line is whitespace, skip
-                print("prev is space")
+                # if the previous line was whitespace
                 continue
-            else:
-                # add a single newline and set prev_is_space to true
-                prev_is_space = True
-                final_text += "\n>"
+            prev_is_space = True
+            final_text += "\n>\n>"
         else:
             # if the previous line is not whitespace, add a space and the line
             # set prev_is_space to false
@@ -55,6 +53,44 @@ def format_reddit_text(text):
     final_text += "\n\n"
 
     return final_text
+
+def get_reddit_message_text(img_urls, post_url):
+    """Get reddit message message result text
+
+    :img_urls: list of image urls
+    :post_url: optional argument for post url
+    :returns: full reddit message text, or None
+
+    """
+    # add text header
+    result_text = "A text transcription of [{url}]({url})\n".format(
+        url=post_url)
+
+    none_count = 0
+
+    if img_urls:
+        # if urls is not empty
+        for url in img_urls:
+            url_text = get_image_text(url)
+
+            if not url_text:
+                # if there is not url text, continue and increment none_count
+                none_count += 1
+                continue
+
+            result_text += format_reddit_text(url_text)
+    else:
+        # returns None if img_urls is empty or invalid
+        return None
+
+    if none_count >= len(img_urls):
+        # if the messages with none are greater or equal to the length of the
+        # image urls
+        return None
+
+    result_text += BOT_FOOTER
+
+    return result_text
 
 def main():
     """Watches reddit comments"""
@@ -81,7 +117,6 @@ def main():
     # loop through submissions in subreddit stream
     for submission in subreddits.submissions():
         url = submission.url
-        print("url: {url}".format(url=url))
         img_urls = []
 
         if is_url_imgur(url):
@@ -91,24 +126,15 @@ def main():
             img_urls = get_reddit_urls(url)
         else:
             # url invalid
-            print("url invalid, skipping")
             img_urls = []
 
-        print(img_urls)
+        result_text = get_reddit_message_text(img_urls, url)
 
-        result_text = "{}\n".format(BOT_HEADER)
-
-        if img_urls:
-            # if urls is not empty
-            for url in img_urls:
-                url_text = get_image_text(url)
-                result_text += format_reddit_text(url_text)
-        else:
-            result_text = NO_TEXT_FOUND
-
-        result_text += BOT_FOOTER
-
-        print(result_text)
+        if result_text:
+            print(result_text)
+            if not DEBUG:
+                submission.reply(result_text)
+            print("\n-------------------\n")
 
 if __name__ == '__main__':
     main()
