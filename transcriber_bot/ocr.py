@@ -16,7 +16,8 @@ def get_image(img_url):
     try:
         response = requests.get(img_url)
         img_arr = numpy.asarray(bytearray(response.content), dtype=numpy.uint8)
-        img = cv2.imdecode(img_arr, -1) # 'Load it as it is'
+        # load image as grayscale
+        img = cv2.imdecode(img_arr, 0)
         return img
     except BaseException as error:
         raise RuntimeError('Image could not be used', error)
@@ -33,17 +34,16 @@ def get_processed_image(img):
 
     """
     try:
-        img_gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+        # img_gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+        img_gray = img
         ret, mask = cv2.threshold(img_gray, 180, 255, cv2.THRESH_BINARY) # pylint: disable=unused-variable
         img_final = cv2.bitwise_and(img_gray, img_gray, mask=mask)
         # for black text , cv.THRESH_BINARY_INV
         ret, new_img = cv2.threshold(img_final, 180, 255, cv2.THRESH_BINARY)
 
-
         """
         removing noise
         """
-
 
         # to manipulate the orientation of dilution , large x means
         # horizonatally dilating  more, large y means vertically dilating more

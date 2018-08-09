@@ -11,7 +11,7 @@ import praw
 BOT_FOOTER = ("Powered by transcriber_bot. " +
               "[Github](https://github.com/isaaclo123/transcriber_bot)")
 CONTINUED_MSG = "cont."
-DEBUG = True
+DEBUG = False
 MAX_COMMENT_LENGTH = 10000
 
 def format_reddit_text(text):
@@ -183,11 +183,16 @@ def main():
         result_text = get_reddit_message_text(img_urls, url)
         result_text_list = split_reddit_message(result_text)
 
+        to_reply = submission
+
         if result_text:
             print(result_text)
             print(result_text_list)
-            #if not DEBUG:
-                #submission.reply(result_text)
+
+            if not DEBUG:
+                for result in result_text_list:
+                    # keep nesting result_text_list responses with replies
+                    to_reply = to_reply.reply(result)
             print("\n-------------------\n")
 
 if __name__ == '__main__':
