@@ -7,10 +7,12 @@ import config
 import praw
 
 # BOT_HEADER = "###Transcriber_bot"
+# NO_TEXT_FOUND_MSG = "*No text found*"
 BOT_FOOTER = ("Powered by transcriber_bot. " +
               "[Github](https://github.com/isaaclo123/transcriber_bot)")
-NO_TEXT_FOUND = "*No text found*"
+CONTINUED_MSG = "cont."
 DEBUG = True
+MAX_COMMENT_LENGTH = 10000
 
 def format_reddit_text(text):
     """Add to result text
@@ -46,7 +48,7 @@ def format_reddit_text(text):
         else:
             # if the previous line is not whitespace, add a space and the line
             # set prev_is_space to false
-            final_text += " {}".format(line)
+            final_text += " " + line
             prev_is_space = False
 
     # add a final 2 newlines
@@ -55,7 +57,7 @@ def format_reddit_text(text):
     return final_text
 
 def get_reddit_message_text(img_urls, post_url):
-    """Get reddit message message result text
+    """Get reddit message result text
 
     :img_urls: list of image urls
     :post_url: optional argument for post url
@@ -92,6 +94,56 @@ def get_reddit_message_text(img_urls, post_url):
 
     return result_text
 
+def split_reddit_message(msg):
+    """splits reddit message result text to list of maximum comment size
+
+    :msg: message to split
+    :returns: list of reddit message text. It is a list of strings that have a
+    maximum length of MAX_COMMENT_LENGTH
+
+    """
+    if not msg:
+        return []
+
+    msg_list = []
+
+    if len(msg) <= MAX_COMMENT_LENGTH:
+        return [msg]
+
+    while msg:
+            # in the event that the message would be cut off
+        if MAX_COMMENT_LENGTH < len(msg) < MAX_COMMENT_LENGTH+len(BOT_FOOTER):
+            # remove bot footer and add to msg_list
+            msg_list.append(msg[:-1*len(BOT_FOOTER)].lstrip().rstrip())
+            # add bot footer in seperate message
+            msg_list.append(BOT_FOOTER)
+            break
+
+        # get message segment from list and left strip it
+        msg_item = msg[0:MAX_COMMENT_LENGTH].lstrip()
+        # get last word (or word part) in msg_item
+        msg_item_final_char = msg_item.split()[-1]
+        # remove that last word (or part or word) from msg_item
+        msg_item = msg_item[:-1*len(msg_item_final_char)]
+        # append that to msg_list
+        msg_list.append(msg_item)
+        # set msg to be the rest of the text, with the last word from the
+        # msg_item added on, only if the last item is not the entire msg_item
+        if len(msg_item_final_char) < len(msg_item):
+            msg = (msg_item_final_char + msg[MAX_COMMENT_LENGTH:]).lstrip()
+        else:
+            msg = msg[MAX_COMMENT_LENGTH:].lstrip()
+
+        if msg and msg[0] != ">":
+            # is msg exists and there is no carat (reddit blockquote) to
+            # begin the message, add one to msg
+            msg = ">" + msg
+
+        # add continued message
+        msg = "{cont}\n{msg}".format(cont=CONTINUED_MSG, msg=msg)
+
+    return msg_list
+
 def main():
     """Watches reddit comments"""
     reddit = praw.Reddit(client_id=config.CLIENT_ID,
@@ -110,7 +162,7 @@ def main():
     # otherwise create subreddits stream string
     subreddit_stream = subreddit_list[0]
     for i in range(1, len(subreddit_list)):
-        subreddit_stream += "+{subreddit}".format(subreddit=subreddit_list[i])
+        subreddit_stream += "+" + subreddit_list[i]
 
     subreddits = reddit.subreddit(subreddit_stream).stream
 
@@ -129,11 +181,13 @@ def main():
             img_urls = []
 
         result_text = get_reddit_message_text(img_urls, url)
+        result_text_list = split_reddit_message(result_text)
 
         if result_text:
             print(result_text)
-            if not DEBUG:
-                submission.reply(result_text)
+            print(result_text_list)
+            #if not DEBUG:
+                #submission.reply(result_text)
             print("\n-------------------\n")
 
 if __name__ == '__main__':

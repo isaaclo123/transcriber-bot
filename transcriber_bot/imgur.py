@@ -4,7 +4,7 @@ import json
 import requests
 
 MAX_TIMEOUT = 10 # 10 second timeout
-MAX_IMAGE_COUNT = 10 # only 10 images allowed to be parsed by bot
+MAX_IMAGE_COUNT = 4 # only 5 album images allowed to be parsed by bot
 IMGUR_URL = "https://imgur.com/"
 
 def is_url_imgur(imgur_url):

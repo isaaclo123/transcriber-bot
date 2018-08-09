@@ -109,7 +109,7 @@ def get_processed_image_text(img): # pylint: disable=too-many-locals
             box_text = _get_contour_text(contour)
             if box_text:
                 # if there is box text, add it
-                final_text += "{}\n".format(box_text)
+                final_text += box_text + "\n"
         # remove excess newlines
         final_text = final_text.lstrip().rstrip()
 
