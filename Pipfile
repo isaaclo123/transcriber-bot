@@ -19,8 +19,3 @@ requests = "*"
 opencv-python = "*"
 numpy = "*"
 pillow = "*"
-
-
-[requires]
-
-python_version = "3.6"
