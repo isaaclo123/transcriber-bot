@@ -15,9 +15,9 @@ class PostLog(object):
         :max_length: max length for log to be
 
         """
-        conn = sqlite3.connect(DB_FILE)
+        self.conn = sqlite3.connect(DB_FILE)
 
-        self.db = conn.cursor()
+        self.db = self.conn.cursor()
         self.max_length = max_length
 
         # create table for stored iterator variable
@@ -66,6 +66,9 @@ class PostLog(object):
         SET val=(((SELECT val FROM vars WHERE id='i' LIMIT 1) + 1) % {})
         WHERE id='i'
         """.format(str(self.max_length)))
+
+        # commit changes
+        self.conn.commit()
 
         return post
 
