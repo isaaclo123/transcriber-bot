@@ -3,6 +3,7 @@
 from imgur import is_url_imgur, get_imgur_urls
 from reddit import is_url_reddit, get_reddit_urls
 from ocr import get_image_text
+from db import PostLog
 import config
 import praw
 
@@ -11,7 +12,7 @@ import praw
 BOT_FOOTER = ("Powered by transcriber_bot. " +
               "[Github](https://github.com/isaaclo123/transcriber_bot)")
 CONTINUED_MSG = "cont."
-DEBUG = False
+DEBUG = True
 MAX_COMMENT_LENGTH = 10000
 
 def format_reddit_text(text):
@@ -159,6 +160,9 @@ def main():
         print("no subreddits in list")
         return
 
+    # initialize post log
+    post_log = PostLog()
+
     # otherwise create subreddits stream string
     subreddit_stream = subreddit_list[0]
     for i in range(1, len(subreddit_list)):
@@ -168,6 +172,11 @@ def main():
 
     # loop through submissions in subreddit stream
     for submission in subreddits.submissions():
+        if post_log.is_in(submission.id):
+            # if the post id is already in the post log, skip processing
+            print("post {} has already been processed".format(submission.id))
+            continue
+
         url = submission.url
         img_urls = []
 
@@ -193,6 +202,11 @@ def main():
                 for result in result_text_list:
                     # keep nesting result_text_list responses with replies
                     to_reply = to_reply.reply(result)
+
+                # add submission to post log
+
+            post_log.add(submission.id)
+            post_log.print_posts()
             print("\n-------------------\n")
 
 if __name__ == '__main__':
