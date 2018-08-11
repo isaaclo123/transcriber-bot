@@ -3,9 +3,10 @@
 from imgur import is_url_imgur, get_imgur_urls
 from reddit import is_url_reddit, get_reddit_urls
 from ocr import get_image_text
-from db import PostLog
-import config
+from models import PostLog
+# import config
 import praw
+import prawcore
 
 # BOT_HEADER = "###Transcriber_bot"
 # NO_TEXT_FOUND_MSG = "*No text found*"
@@ -145,8 +146,97 @@ def split_reddit_message(msg):
 
     return msg_list
 
-def main():
-    """Watches reddit comments"""
+class Bot(object):
+    """Class for transcriber bot"""
+
+    def __init__(self, config):
+        """initializes Bot
+
+        :config: a ConfigParser config object
+
+        """
+
+        try:
+            self.reddit = praw.Reddit(client_id=config.CLIENT_ID,
+                                      client_secret=config.CLIENT_SECRET,
+                                      user_agent=config.USER_AGENT,
+                                      username=config.USERNAME,
+                                      password=config.PASSWORD)
+
+            subreddit_list = config.SUBREDDIT_LIST
+
+            # if no subreddits to watch, don't run bot
+            if not subreddit_list:
+                print("no subreddits in list")
+                return
+
+            # initialize post log
+            self.post_log = PostLog()
+
+            # otherwise create subreddits stream string
+            subreddit_stream = subreddit_list[0]
+            for i in range(1, len(subreddit_list)):
+                subreddit_stream += "+" + subreddit_list[i]
+
+            self.subreddits = self.reddit.subreddit(subreddit_stream).stream
+
+            # set variable indicating that the bot is initialized
+            self.initialized = True
+        except BaseException as error:
+            print('Bot could not be initialized', error)
+            return
+
+    def run(self):
+        """runs bot
+
+        :raises: RuntimeException saying bot is not initialized
+
+        """
+        if not self.initialized:
+            raise RuntimeError('Bot not initialized')
+
+        # loop through submissions in subreddit stream
+        for submission in self.subreddits.submissions():
+            if self.post_log.is_in(submission.id):
+                # if the post id is already in the post log, skip processing
+                print("post {} has already been processed".format(
+                    submission.id))
+                continue
+
+            url = submission.url
+            img_urls = []
+
+            if is_url_imgur(url):
+                # if url is imgur
+                img_urls = get_imgur_urls(url)
+            elif is_url_reddit(url):
+                img_urls = get_reddit_urls(url)
+            else:
+                # url invalid
+                img_urls = []
+
+            result_text = get_reddit_message_text(img_urls, url)
+            result_text_list = split_reddit_message(result_text)
+
+            to_reply = submission
+
+            if result_text:
+                print(result_text)
+                print(result_text_list)
+
+                if not DEBUG:
+                    for result in result_text_list:
+                        # keep nesting result_text_list responses with replies
+                        to_reply = to_reply.reply(result)
+
+                    # add submission to post log
+
+                self.post_log.add(submission.id)
+                self.post_log.print_posts()
+                print("\n-------------------\n")
+
+"""
+def run():
     reddit = praw.Reddit(client_id=config.CLIENT_ID,
                          client_secret=config.CLIENT_SECRET,
                          user_agent=config.USER_AGENT,
@@ -208,6 +298,4 @@ def main():
             post_log.add(submission.id)
             post_log.print_posts()
             print("\n-------------------\n")
-
-if __name__ == '__main__':
-    main()
+"""

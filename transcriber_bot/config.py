@@ -1,6 +1,27 @@
 """Configuration values for the reddit transcriber bot"""
 
 import os
+import json
+import configparser
+
+def create_config():
+    """Creates a ConfigParser config object for the transcriber bot
+
+    :returns: ConfigParser config object
+
+    """
+
+    config = configparser.ConfigParser()
+    config['DEFAULT'] = {
+        'client_id': 'None',
+        'client_secret': 'None',
+        'user_agent': 'None',
+        'username': 'None',
+        'password': 'None',
+        'subreddits': '[]'
+    }
+
+"""
 
 # reddit client id
 CLIENT_ID = 'bx2UN5dyZWVQuw' # os.environ.get('CLIENT_ID')
@@ -22,7 +43,6 @@ SUBREDDIT_LIST = [
     'testingground4bots',
 ]
 
-"""
 class Config(object):
     # Config class for the reddit transcriber bot
 

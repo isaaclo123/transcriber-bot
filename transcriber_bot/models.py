@@ -1,43 +1,47 @@
 """Contains db code"""
 
 import sqlite3
+import os
 
 DEFAULT_MAX_LOG_LENGTH = 100
-MAX_POST_LENGTH = 6
-DB_FILE = "postlog.db"
+DEFAULT_MAX_POST_LENGTH = 6
+CUR_PATH = os.path.dirname(os.path.realpath(__file__))
+DB_FILE = os.path.join(CUR_PATH, "postlog.db")
 
 class PostLog(object):
     """Class for logging transcribe bot posts"""
 
-    def __init__(self, max_length=DEFAULT_MAX_LOG_LENGTH):
+    def __init__(self, max_log_len=DEFAULT_MAX_LOG_LENGTH,
+                 max_post_len=DEFAULT_MAX_POST_LENGTH):
         """constructor for PostLog
 
-        :max_length: max length for log to be
+        :max_log_len: max length for log to be
 
         """
         self.conn = sqlite3.connect(DB_FILE)
 
-        self.db = self.conn.cursor()
-        self.max_length = max_length
+        self.cur = self.conn.cursor()
+        self.max_log_len = max_log_len
+        self.max_post_len = max_post_len
 
         # create table for stored iterator variable
-        self.db.execute("""
+        self.cur.execute("""
         CREATE TABLE IF NOT EXISTS vars (
             id char(1) PRIMARY KEY,
             val int({})
-        )""".format(str(self.max_length)))
+        )""".format(str(self.max_log_len)))
 
         # initialize iterator variable i if needed
-        self.db.execute("""
+        self.cur.execute("""
         INSERT OR IGNORE INTO vars(id, val) VALUES('i', 0)
         """)
 
         # create table
-        self.db.execute("""
+        self.cur.execute("""
         CREATE TABLE IF NOT EXISTS posts (
             id int({}) NOT NULL PRIMARY KEY,
             post char({})
-        )""".format(str(self.max_length), str(MAX_POST_LENGTH)))
+        )""".format(str(self.max_log_len), str(self.max_post_len)))
 
 
     def add(self, post):
@@ -53,19 +57,19 @@ class PostLog(object):
             return None
 
         # add post at id = i
-        self.db.execute("""
+        self.cur.execute("""
         REPLACE INTO posts(id, post)
             VALUES(
                 (SELECT val FROM vars WHERE id='i' LIMIT 1),
                 ?
-        )""".format(str(self.max_length)), (post,))
+        )""".format(str(self.max_log_len)), (post,))
 
         # increment iterator variable by 1, loop at 100
-        self.db.execute("""
+        self.cur.execute("""
         UPDATE vars
         SET val=(((SELECT val FROM vars WHERE id='i' LIMIT 1) + 1) % {})
         WHERE id='i'
-        """.format(str(self.max_length)))
+        """.format(str(self.max_log_len)))
 
         # commit changes
         self.conn.commit()
@@ -79,11 +83,11 @@ class PostLog(object):
         :returns: true if post is in PostLog, and false otherwise
 
         """
-        self.db.execute("SELECT 1 FROM posts WHERE post=?", (post,))
+        self.cur.execute("SELECT 1 FROM posts WHERE post=?", (post,))
         # return if there are one or more results from the post query
-        return len(self.db.fetchall()) > 0
+        return len(self.cur.fetchall()) > 0
 
     def print_posts(self):
         """prints posts"""
-        self.db.execute("SELECT * FROM posts")
-        print(self.db.fetchall())
+        self.cur.execute("SELECT * FROM posts")
+        print(self.cur.fetchall())
