@@ -90,7 +90,11 @@ class PostLog(object):
         # return if there are one or more results from the post query
         return len(self.cur.fetchall()) > 0
 
-    def print_posts(self):
-        """prints posts"""
-        self.cur.execute("SELECT * FROM posts")
+    def print_posts(self, limit=10):
+        """prints first 10 columns posts
+
+        :limit: limit of columns to print
+
+        """
+        self.cur.execute("SELECT * FROM posts LIMIT ?", (limit,))
         print(self.cur.fetchall())

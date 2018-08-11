@@ -1,4 +1,5 @@
 #!/usr/bin/python3
+
 """Main run file for the reddit transcriber bot"""
 
 import os
@@ -13,9 +14,10 @@ def main():
     """main method for reddit transcriber bot"""
     # create an instance of the config
     print("Starting Transcribe Bot")
-    print("---------------------------\n")
+    print("------------------------\n")
     post_log = PostLog(PATH)
     config = Config(PATH)
+    print("\n------------------------\n")
     bot = Bot(post_log, config)
     bot.run()
 

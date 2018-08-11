@@ -30,17 +30,17 @@ def get_imgur_data(imgur_url):
         imgur_data = json.loads(imgur_json)
         return imgur_data
     except requests.Timeout:
-        print("Request timed out")
+        print("Request timed out on {}".format(imgur_url))
         return None
     except requests.RequestException:
-        print("Internet issue, requests error")
+        print("Internet issue, requests error on {}".format(imgur_url))
         return None
     except json.decoder.JSONDecodeError:
-        # if images is invalid, print out statement and return empty list
-        print("Invalid JSON data")
+        # if images is invalid, print out statement and return None
+        print("Invalid JSON data on {}".format(imgur_url))
         return None
     except BaseException as error:
-        print("Base exception: {error}".format(error=error))
+        print("Base exception: {}".format(error))
         return None
 
 def get_imgur_url(imgur_image):
