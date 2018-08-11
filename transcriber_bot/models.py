@@ -1,24 +1,28 @@
-"""Contains db code"""
+"""Contains db model code"""
 
 import sqlite3
 import os
 
 DEFAULT_MAX_LOG_LENGTH = 100
 DEFAULT_MAX_POST_LENGTH = 6
-CUR_PATH = os.path.dirname(os.path.realpath(__file__))
-DB_FILE = os.path.join(CUR_PATH, "postlog.db")
+LOG_FILE = "log.db"
 
 class PostLog(object):
     """Class for logging transcribe bot posts"""
 
-    def __init__(self, max_log_len=DEFAULT_MAX_LOG_LENGTH,
+    def __init__(self, file_path, max_log_len=DEFAULT_MAX_LOG_LENGTH,
                  max_post_len=DEFAULT_MAX_POST_LENGTH):
         """constructor for PostLog
 
+        :file_path: file path for postlog.db
         :max_log_len: max length for log to be
+        :max_post_len: max length for post to be
 
         """
-        self.conn = sqlite3.connect(DB_FILE)
+        log_file_path = os.path.join(file_path, LOG_FILE)
+        self.conn = sqlite3.connect(log_file_path)
+
+        print("Post Log {} initialized".format(log_file_path))
 
         self.cur = self.conn.cursor()
         self.max_log_len = max_log_len
@@ -42,7 +46,6 @@ class PostLog(object):
             id int({}) NOT NULL PRIMARY KEY,
             post char({})
         )""".format(str(self.max_log_len), str(self.max_post_len)))
-
 
     def add(self, post):
         """adds post to PostLog

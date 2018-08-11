@@ -4,65 +4,73 @@ import os
 import json
 import configparser
 
-def create_config():
+CUR_PATH = os.path.dirname(os.path.realpath(__file__))
+CONFIG_FILE = "config.ini"
+
+def create_config(file_path):
     """Creates a ConfigParser config object for the transcriber bot
 
+    :file_path: file path to place config file
     :returns: ConfigParser config object
 
     """
 
     config = configparser.ConfigParser()
-    config['DEFAULT'] = {
-        'client_id': 'None',
-        'client_secret': 'None',
-        'user_agent': 'None',
-        'username': 'None',
-        'password': 'None',
-        'subreddits': '[]'
+    config["DEFAULT"] = {
+        "debug": "True",
+        "client_id": "$CLIENT ID GOES HERE$",
+        "client_secret": "$SECRET GOES HERE$",
+        "user_agent": "transcriber_bot 1 (by /u/isaac_lo)",
+        "username": "$REDDIT USERNAME GOES HERE$",
+        "password": "$REDDIT PASSWORD GOES HERE$",
+        "subreddits": "[\"testingground4bots\"]"
     }
 
-"""
+    config_file_path = os.path.join(file_path, CONFIG_FILE)
 
-# reddit client id
-CLIENT_ID = 'bx2UN5dyZWVQuw' # os.environ.get('CLIENT_ID')
+    # write to config file
+    with open(config_file_path, "w") as config_file:
+        config.write(config_file)
 
-# reddit client secret
-CLIENT_SECRET = os.environ.get('CLIENT_SECRET')
+    print("Config file {} created".format(config_file_path))
 
-# reddit client password
-PASSWORD = os.environ.get('PASSWORD')
+    return config
 
-# reddit client user agent text
-USER_AGENT = 'transcriber-bot'
+def read_config(file_path):
+    """Reads a ConfigParser config and returns the object
 
-# reddit client username
-USERNAME = 'isaac_lo' # os.environ.get('USERNAME')
+    :file_path: file path of config file
+    :returns: ConfigParser config object
 
-# list of subreddits to watch
-SUBREDDIT_LIST = [
-    'testingground4bots',
-]
+    """
+    config = configparser.ConfigParser()
+    config_file_path = os.path.join(file_path, CONFIG_FILE)
+    config.read(config_file_path)
+
+    print("Config file {} opened".format(config_file_path))
+    return config
 
 class Config(object):
-    # Config class for the reddit transcriber bot
+    """a wrapper class for the ConfigParser config"""
+    def __init__(self, file_path):
+        """constructor for config class
 
-    # reddit client id
-    CLIENT_ID = 'bx2UN5dyZWVQuw' # os.environ.get('CLIENT_ID')
+        :file_path: file path where config file should be
 
-    # reddit client secret
-    CLIENT_SECRET = os.environ.get('CLIENT_SECRET')
+        """
 
-    # reddit client password
-    PASSWORD = os.environ.get('PASSWORD')
+        config = read_config(file_path)
 
-    # reddit client user agent text
-    USER_AGENT = 'transcriber-bot'
+        # if config file does not have proper parts yet, create it
+        if not config["DEFAULT"]:
+            config = create_config(file_path)
 
-    # reddit client username
-    USERNAME = 'isaac_lo' # os.environ.get('USERNAME')
+        # debug var
+        self.debug = config["DEFAULT"]["debug"].lower() == "true"
 
-    # list of subreddits to watch
-    SUBREDDIT_LIST = [
-        'testingground4bots',
-    ]
-"""
+        self.client_id = config["DEFAULT"]["client_id"]
+        self.client_secret = config["DEFAULT"]["client_secret"]
+        self.user_agent = config["DEFAULT"]["user_agent"]
+        self.username = config["DEFAULT"]["username"]
+        self.password = config["DEFAULT"]["password"]
+        self.subreddits = json.loads(config["DEFAULT"]["subreddits"])

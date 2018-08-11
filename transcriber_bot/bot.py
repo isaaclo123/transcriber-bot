@@ -1,19 +1,13 @@
 """Contains PRAW reddit bot code"""
 
-from imgur import is_url_imgur, get_imgur_urls
-from reddit import is_url_reddit, get_reddit_urls
-from ocr import get_image_text
-from models import PostLog
-# import config
 import praw
-import prawcore
+from transcriber_bot.imgur import is_url_imgur, get_imgur_urls
+from transcriber_bot.reddit import is_url_reddit, get_reddit_urls
+from transcriber_bot.ocr import get_image_text
 
-# BOT_HEADER = "###Transcriber_bot"
-# NO_TEXT_FOUND_MSG = "*No text found*"
 BOT_FOOTER = ("Powered by transcriber_bot. " +
               "[Github](https://github.com/isaaclo123/transcriber_bot)")
 CONTINUED_MSG = "cont."
-DEBUG = True
 MAX_COMMENT_LENGTH = 10000
 
 def format_reddit_text(text):
@@ -149,29 +143,34 @@ def split_reddit_message(msg):
 class Bot(object):
     """Class for transcriber bot"""
 
-    def __init__(self, config):
+    # set "initialized" marker to false
+    initialized = False
+
+    def __init__(self, post_log, config):
         """initializes Bot
 
         :config: a ConfigParser config object
 
         """
-
         try:
-            self.reddit = praw.Reddit(client_id=config.CLIENT_ID,
-                                      client_secret=config.CLIENT_SECRET,
-                                      user_agent=config.USER_AGENT,
-                                      username=config.USERNAME,
-                                      password=config.PASSWORD)
+            # debug var
+            self.debug = config.debug
 
-            subreddit_list = config.SUBREDDIT_LIST
+            self.reddit = praw.Reddit(client_id=config.client_id,
+                                      client_secret=config.client_secret,
+                                      user_agent=config.user_agent,
+                                      username=config.username,
+                                      password=config.password)
+
+            subreddit_list = config.subreddits
 
             # if no subreddits to watch, don't run bot
             if not subreddit_list:
-                print("no subreddits in list")
+                print("no subreddits in list, Bot not initialized")
                 return
 
-            # initialize post log
-            self.post_log = PostLog()
+            # set post log
+            self.post_log = post_log
 
             # otherwise create subreddits stream string
             subreddit_stream = subreddit_list[0]
@@ -224,7 +223,7 @@ class Bot(object):
                 print(result_text)
                 print(result_text_list)
 
-                if not DEBUG:
+                if not self.debug:
                     for result in result_text_list:
                         # keep nesting result_text_list responses with replies
                         to_reply = to_reply.reply(result)
@@ -234,68 +233,3 @@ class Bot(object):
                 self.post_log.add(submission.id)
                 self.post_log.print_posts()
                 print("\n-------------------\n")
-
-"""
-def run():
-    reddit = praw.Reddit(client_id=config.CLIENT_ID,
-                         client_secret=config.CLIENT_SECRET,
-                         user_agent=config.USER_AGENT,
-                         username=config.USERNAME,
-                         password=config.PASSWORD)
-
-    subreddit_list = config.SUBREDDIT_LIST
-
-    # if no subreddits to watch, end program
-    if not subreddit_list:
-        print("no subreddits in list")
-        return
-
-    # initialize post log
-    post_log = PostLog()
-
-    # otherwise create subreddits stream string
-    subreddit_stream = subreddit_list[0]
-    for i in range(1, len(subreddit_list)):
-        subreddit_stream += "+" + subreddit_list[i]
-
-    subreddits = reddit.subreddit(subreddit_stream).stream
-
-    # loop through submissions in subreddit stream
-    for submission in subreddits.submissions():
-        if post_log.is_in(submission.id):
-            # if the post id is already in the post log, skip processing
-            print("post {} has already been processed".format(submission.id))
-            continue
-
-        url = submission.url
-        img_urls = []
-
-        if is_url_imgur(url):
-            # if url is imgur
-            img_urls = get_imgur_urls(url)
-        elif is_url_reddit(url):
-            img_urls = get_reddit_urls(url)
-        else:
-            # url invalid
-            img_urls = []
-
-        result_text = get_reddit_message_text(img_urls, url)
-        result_text_list = split_reddit_message(result_text)
-
-        to_reply = submission
-
-        if result_text:
-            print(result_text)
-            print(result_text_list)
-
-            if not DEBUG:
-                for result in result_text_list:
-                    # keep nesting result_text_list responses with replies
-                    to_reply = to_reply.reply(result)
-
-                # add submission to post log
-
-            post_log.add(submission.id)
-            post_log.print_posts()
-            print("\n-------------------\n")
-"""
