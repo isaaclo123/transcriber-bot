@@ -5,8 +5,8 @@ from transcriber_bot.imgur import is_url_imgur, get_imgur_urls
 from transcriber_bot.reddit import is_url_reddit, get_reddit_urls
 from transcriber_bot.ocr import get_image_text
 
-BOT_FOOTER = ("Powered by transcriber_bot. " +
-              "[Github](https://github.com/isaaclo123/transcriber_bot)")
+BOT_FOOTER = ("Powered by [transcriber_bot]" +
+              "(https://github.com/isaaclo123/transcriber_bot), /u/isaac_lo")
 CONTINUED_MSG = "cont."
 MAX_COMMENT_LENGTH = 10000
 
