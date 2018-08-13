@@ -9,6 +9,7 @@ BOT_FOOTER = ("Powered by [transcriber_bot]" +
               "(https://github.com/isaaclo123/transcriber_bot), /u/isaac_lo")
 CONTINUED_MSG = "cont."
 MAX_COMMENT_LENGTH = 10000
+DEBUG_MAX_RUNS = 4
 
 class Bot(object):
     """Class for transcriber bot"""
@@ -19,6 +20,7 @@ class Bot(object):
     def __init__(self, post_log, config):
         """initializes Bot
 
+        :post_log: a PostLog object
         :config: a ConfigParser config object
 
         """
@@ -58,61 +60,97 @@ class Bot(object):
     def run(self):
         """runs bot
 
+        :returns: true when completed
         :raises: RuntimeException saying bot is not initialized
 
         """
         if not self.initialized:
             raise RuntimeError('Bot not initialized')
 
-        # loop through submissions in subreddit stream
-        for submission in self.subreddits.submissions():
-            if self.post_log.is_in(submission.id):
-                # if the post id is already in the post log, skip processing
-                print("post {} has already been processed".format(
-                    submission.id))
-                continue
+        try:
+            run_count = 0
 
-            url = submission.url
-            img_urls = []
+            # loop through submissions in subreddit stream. If in debug, only
+            # run DEBUG_MAX_RUNS times total
+            for submission in self.subreddits.submissions():
+                # if debug, increment run_count until DEBUG_MAX_RUNS and break
+                if self.debug and run_count >= DEBUG_MAX_RUNS:
+                    break
 
-            if is_url_imgur(url):
-                # if url is imgur
-                img_urls = get_imgur_urls(url)
-            elif is_url_reddit(url):
-                img_urls = get_reddit_urls(url)
-            else:
-                # url invalid
+                if self.post_log.is_in(submission.id):
+                    # if the post id is already in the post log, skip processing
+                    print("post {} has already been processed".format(
+                        submission.id))
+                    continue
+
+                url = submission.url
                 img_urls = []
 
-            result_text = Bot.get_reddit_message_text(img_urls, url)
+
+                # increment run_count if in debug
+                if self.debug:
+                    run_count += 1
+
+                if is_url_imgur(url):
+                    # if url is imgur
+                    img_urls = get_imgur_urls(url)
+                elif is_url_reddit(url):
+                    img_urls = get_reddit_urls(url)
+                else:
+                    # url invalid
+                    img_urls = []
+                    # decrease run_count if invalid
+                    if self.debug:
+                        run_count -= 1
+
+                result_text = Bot.get_reddit_message_text(img_urls, url)
+                # reply to submission
+                self._reply_to_submission(submission, result_text)
+
+            return True
+        except BaseException as error:
+            print('Bot run error', error)
+            # print error, return false if on debug
+            if self.debug:
+                return False
+
+    def _reply_to_submission(self, submission, result_text):
+        """process a new reddit message, reply to it, add it to log
+
+        :submission: submission to process
+        :result_text: the result of a message
+
+        """
+
+        to_reply = submission
+
+        if result_text:
             result_text_list = Bot.split_reddit_message(result_text)
 
-            to_reply = submission
+            print("post {} is being processed".format(submission.id))
+            print("message will be split into {} posts".format(
+                len(result_text_list)))
+            print("\nPOST*********************")
+            # print first 1000 characters
+            print(result_text[:1000])
+            print("POST_END*********************\n")
 
-            if result_text:
-                print("post {} is being processed".format(submission.id))
-                print("message will be split into {} posts".format(
-                    len(result_text_list)))
-                print("\nPOST*********************")
-                # print first 1000 characters
-                print(result_text[:1000])
-                print("POST_END*********************\n")
+            if not self.debug:
+                for result in result_text_list:
+                    # keep nesting result_text_list responses with
+                    # replies
+                    to_reply = to_reply.reply(result)
 
-                if not self.debug:
-                    for result in result_text_list:
-                        # keep nesting result_text_list responses with replies
-                        to_reply = to_reply.reply(result)
+                # add submission to post log
+                self.post_log.add(submission.id)
 
-                    # add submission to post log
-                    self.post_log.add(submission.id)
-
-                print("Part of post_log: ")
-                self.post_log.print_posts()
-                print("\n-------------------\n")
+            print("Part of post_log: ")
+            self.post_log.print_posts()
+            print("\n-------------------\n")
 
     @staticmethod
     def format_reddit_text(text):
-        """Add to result text
+        """format text into reddit block quote
 
         :text: text to add to a comment
         :returns: formatted text to add to a result, or None
@@ -194,12 +232,13 @@ class Bot(object):
         return result_text
 
     @staticmethod
-    def split_reddit_message(msg):
+    def split_reddit_message(msg, split_length=MAX_COMMENT_LENGTH):
         """splits reddit message result text to list of maximum comment size
 
         :msg: message to split
+        :split length: length to split message at
         :returns: list of reddit message text. It is a list of strings that have
-        a maximum length of MAX_COMMENT_LENGTH
+        a maximum length of split_length
 
         """
         if not msg:
@@ -207,13 +246,13 @@ class Bot(object):
 
         msg_list = []
 
-        if len(msg) <= MAX_COMMENT_LENGTH:
+        if len(msg) <= split_length:
             return [msg]
 
         while msg:
                 # in the event that the message would be cut off
-            if (MAX_COMMENT_LENGTH < len(msg) <
-                    MAX_COMMENT_LENGTH+len(BOT_FOOTER)):
+            if (split_length < len(msg) <
+                    split_length+len(BOT_FOOTER)):
                 # remove bot footer and add to msg_list
                 msg_list.append(msg[:-1*len(BOT_FOOTER)].lstrip().rstrip())
                 # add bot footer in seperate message
@@ -221,7 +260,7 @@ class Bot(object):
                 break
 
             # get message segment from list and left strip it
-            msg_item = msg[0:MAX_COMMENT_LENGTH].lstrip()
+            msg_item = msg[0:split_length].lstrip()
             # get last word (or word part) in msg_item
             msg_item_final_char = msg_item.split()[-1]
             # remove that last word (or part or word) from msg_item
@@ -232,9 +271,9 @@ class Bot(object):
             # msg_item added on, only if the last item is not the entire
             # msg_item
             if len(msg_item_final_char) < len(msg_item):
-                msg = (msg_item_final_char + msg[MAX_COMMENT_LENGTH:]).lstrip()
+                msg = (msg_item_final_char + msg[split_length:]).lstrip()
             else:
-                msg = msg[MAX_COMMENT_LENGTH:].lstrip()
+                msg = msg[split_length:].lstrip()
 
             if msg and msg[0] != ">":
                 # is msg exists and there is no carat (reddit blockquote) to

@@ -104,6 +104,6 @@ venv.bak/
 # mypy
 .mypy_cache/
 
-# all config and logfiles
+# transcriber_bot config and logfiles
 *.db
-*.ini
+config.ini

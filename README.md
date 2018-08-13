@@ -4,10 +4,18 @@ transcriber_bot is a bot that transcribes reddit images
 
 ## How to run it
 
-1. Run transcriber_bot.py once to generate a default config.ini file.
-2. Edit this config.ini file with the required reddit bot information.
-3. run transcriber_bot.py again.
-4. Enjoy!
+1. Edit the config_default.ini file with the required reddit bot information.
+    * debug: If debug is True, the bot will parse images, but not post to reddit
+      a test
+    * client_id: reddit application client ID
+    * client_secret: reddit application client secret
+    * user_agent: reddit bot user agent
+    * username: reddit username
+    * password: reddit password
+    * subreddits: list of subreddits to run bot on
+2. Rename config_default.ini to config.ini
+2. Run transcriber_bot.py.
+3. Enjoy!
 
 ## What is it
 
