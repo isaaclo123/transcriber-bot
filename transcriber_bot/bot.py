@@ -86,7 +86,6 @@ class Bot(object):
                 url = submission.url
                 img_urls = []
 
-
                 # increment run_count if in debug
                 if self.debug:
                     run_count += 1
@@ -200,6 +199,10 @@ class Bot(object):
         :returns: full reddit message text, or None
 
         """
+
+        if not post_url:
+            return None
+
         # add text header
         result_text = "A text transcription of [{url}]({url})\n".format(
             url=post_url)
