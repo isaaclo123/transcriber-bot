@@ -7,7 +7,7 @@ import configparser
 CUR_PATH = os.path.dirname(os.path.realpath(__file__))
 CONFIG_FILE = "config.ini"
 
-class Config(object):
+class Config(object): # pylint: disable=too-many-instance-attributes
     """a wrapper class for the ConfigParser config"""
     def __init__(self, file_path):
         """constructor for config class
@@ -21,6 +21,9 @@ class Config(object):
         # if config file does not have proper parts yet, create it
         if not config["DEFAULT"]:
             config = Config.create_config(file_path)
+            self.firstrun = True
+        else:
+            self.firstrun = False
 
         # debug var
         self.debug = config["DEFAULT"]["debug"].lower() == "true"
@@ -31,7 +34,6 @@ class Config(object):
         self.username = config["DEFAULT"]["username"]
         self.password = config["DEFAULT"]["password"]
         self.subreddits = json.loads(config["DEFAULT"]["subreddits"])
-
 
     @staticmethod
     def create_config(file_path):
