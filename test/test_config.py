@@ -1,4 +1,4 @@
-"""Configuration values for the reddit transcriber bot"""
+"""Contains bot config test code"""
 
 import os
 from transcriber_bot.config import Config
