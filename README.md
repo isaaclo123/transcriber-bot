@@ -24,8 +24,7 @@ to find posts with images. It will then fetch the images, find and format the te
 reply to the image post with any text found within the image. Currently, the bot supports reddit 
 submissions with static gif, jpg, or png images hosted on reddit media or imgur albums. For imgur 
 albums, the bot will parse a maximum of 4 album images. Text is formatted by omitting excess 
-newlines and spaces. In the case the parsed text goes over reddit's 10,000 character count for 
-comments, the bot will split up the text into separate replies.
+newlines and spaces, and the text replied is limited to a maximum of 5000 characters.
 
 ## How does it work
 

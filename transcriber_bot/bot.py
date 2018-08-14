@@ -5,11 +5,12 @@ from transcriber_bot.imgur import is_url_imgur, get_imgur_urls
 from transcriber_bot.reddit import is_url_reddit, get_reddit_urls
 from transcriber_bot.ocr import get_image_text
 
+BOT_HEADER = "A text transcription of"
 BOT_FOOTER = ("Powered by [transcriber_bot]" +
               "(https://github.com/isaaclo123/transcriber_bot), /u/isaac_lo")
 CONTINUED_MSG = "cont."
-MAX_COMMENT_LENGTH = 10000
-DEBUG_MAX_RUNS = 4
+MAX_REPLY_LENGTH = 5000
+DEBUG_MAX_RUNS = 2
 
 class Bot(object):
     """Class for transcriber bot"""
@@ -121,25 +122,16 @@ class Bot(object):
 
         """
 
-        to_reply = submission
-
         if result_text:
-            result_text_list = Bot.split_reddit_message(result_text)
-
             print("post {} is being processed".format(submission.id))
-            print("message will be split into {} posts".format(
-                len(result_text_list)))
             print("\nPOST*********************")
             # print first 1000 characters
             print(result_text[:1000])
             print("POST_END*********************\n")
 
             if not self.debug:
-                for result in result_text_list:
-                    # keep nesting result_text_list responses with
-                    # replies
-                    to_reply = to_reply.reply(result)
-
+                # reply to submission
+                submission.reply(result_text)
                 # add submission to post log
                 self.post_log.add(submission.id)
 
@@ -191,99 +183,55 @@ class Bot(object):
         return final_text
 
     @staticmethod
-    def get_reddit_message_text(img_urls, post_url):
+    def get_reddit_message_text(img_urls, post_url,
+                                max_length=MAX_REPLY_LENGTH):
         """Get reddit message result text
 
         :img_urls: list of image urls
-        :post_url: optional argument for post url
+        :post_url: post url
+        :max_length: maximum length for reply
         :returns: full reddit message text, or None
 
         """
 
-        if not post_url:
+        if not post_url or not img_urls:
             return None
-
-        # add text header
-        result_text = "A text transcription of [{url}]({url})\n".format(
-            url=post_url)
 
         none_count = 0
+        char_count = 0
 
-        if img_urls:
-            # if urls is not empty
-            for url in img_urls:
-                url_text = get_image_text(url)
+        result_text = ""
 
-                if not url_text:
-                    # if there is not url text, continue and increment
-                    # none_count
-                    none_count += 1
-                    continue
+        # if urls is not empty
+        for url in img_urls:
+            # if the added text is greater than the max reply length allowed
+            if char_count >= max_length:
+                break
 
-                result_text += Bot.format_reddit_text(url_text)
-        else:
-            # returns None if img_urls is empty or invalid
-            return None
+            url_text = get_image_text(url)
+
+            if not url_text:
+                # if there is not url text, continue and increment
+                # none_count
+                none_count += 1
+                continue
+
+            formatted_text = Bot.format_reddit_text(url_text)
+            result_text += formatted_text
+            char_count += len(formatted_text)
 
         if none_count >= len(img_urls):
             # if the messages with none are greater or equal to the length of
             # the image urls
             return None
 
-        result_text += BOT_FOOTER
+        # strip excess whitespace and limit length of result
+        result_text = result_text.lstrip().rstrip()
+        result_text = result_text[:max_length]
+
+        # add text header and footer
+        result_text = "{header} [{url}]({url})\n{content}\n\n{footer}".format(
+            url=post_url, header=BOT_HEADER, content=result_text,
+            footer=BOT_FOOTER)
 
         return result_text
-
-    @staticmethod
-    def split_reddit_message(msg, split_length=MAX_COMMENT_LENGTH):
-        """splits reddit message result text to list of maximum comment size
-
-        :msg: message to split
-        :split length: length to split message at
-        :returns: list of reddit message text. It is a list of strings that have
-        a maximum length of split_length
-
-        """
-        if not msg:
-            return []
-
-        msg_list = []
-
-        if len(msg) <= split_length:
-            return [msg]
-
-        while msg:
-                # in the event that the message would be cut off
-            if (split_length < len(msg) <
-                    split_length+len(BOT_FOOTER)):
-                # remove bot footer and add to msg_list
-                msg_list.append(msg[:-1*len(BOT_FOOTER)].lstrip().rstrip())
-                # add bot footer in seperate message
-                msg_list.append(BOT_FOOTER)
-                break
-
-            # get message segment from list and left strip it
-            msg_item = msg[0:split_length].lstrip()
-            # get last word (or word part) in msg_item
-            msg_item_final_char = msg_item.split()[-1]
-            # remove that last word (or part or word) from msg_item
-            msg_item = msg_item[:-1*len(msg_item_final_char)]
-            # append that to msg_list
-            msg_list.append(msg_item)
-            # set msg to be the rest of the text, with the last word from the
-            # msg_item added on, only if the last item is not the entire
-            # msg_item
-            if len(msg_item_final_char) < len(msg_item):
-                msg = (msg_item_final_char + msg[split_length:]).lstrip()
-            else:
-                msg = msg[split_length:].lstrip()
-
-            if msg and msg[0] != ">":
-                # is msg exists and there is no carat (reddit blockquote) to
-                # begin the message, add one to msg
-                msg = ">" + msg
-
-            # add continued message
-            msg = "{cont}\n{msg}".format(cont=CONTINUED_MSG, msg=msg)
-
-        return msg_list
