@@ -17,10 +17,12 @@ def test_init_valid_config():
 
     post_log = PostLog(PATH)
     config = Config(PATH)
+    # set debug to true
+    config.debug = True
+    # set subreddits to just bot test subreddit
+    config.subreddits = ["testingground4bots"]
 
     bot = Bot(post_log, config)
-    # set debug to true
-    bot.debug = True
     # assert bot initialized flag
     assert bot.initialized
 
