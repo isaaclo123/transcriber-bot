@@ -50,4 +50,5 @@ text-to-speech browsers) read the contents of images.
 ## Bugs
 
 * Only some imgur albums work. It appears imgur links with "gallery" work 
-  (https://imgur.com/gallery/2OMsd), but not other links, such as (https://imgur.com/a/NyHaeak)
+  [https://imgur.com/gallery/2OMsd](https://imgur.com/gallery/2OMsd), but not other links, such as 
+  [https://imgur.com/a/NyHaeak](https://imgur.com/a/NyHaeak)
