@@ -1,9 +1,11 @@
 """Helper methods for managing reddit links"""
 
 import requests
+from requests.utils import quote
 
 MAX_TIMEOUT = 10 # 10 second timeout
 REDDIT_URL = "https://i.redd.it/"
+QUOTE_CHARS = "/:"
 
 IMAGE_EXTS = [
     ".png",
@@ -19,6 +21,10 @@ def is_url_reddit(reddit_url):
     :returns: boolean that is true if url is reddit url
 
     """
+    if reddit_url:
+        reddit_url = quote(reddit_url, safe=QUOTE_CHARS)
+    else:
+        return False
     return reddit_url.startswith(REDDIT_URL)
 
 def check_reddit_data(reddit_url):
@@ -29,6 +35,10 @@ def check_reddit_data(reddit_url):
 
     """
     try:
+        if reddit_url:
+            reddit_url = quote(reddit_url, safe=QUOTE_CHARS)
+        else:
+            return False
         reddit_data = requests.get(reddit_url, timeout=MAX_TIMEOUT)
         # return true if statis code is not 404
         return reddit_data.status_code != 404
@@ -49,6 +59,11 @@ def get_reddit_urls(reddit_url):
     :returns: list with reddit image, or empty list, if invalid
 
     """
+
+    if reddit_url:
+        reddit_url = quote(reddit_url, safe=QUOTE_CHARS)
+    else:
+        return []
 
     if not is_url_reddit(reddit_url):
         # if the url is not a reddit link, return an empty list

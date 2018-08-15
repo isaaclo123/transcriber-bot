@@ -46,3 +46,8 @@ was an excellent opportunity for automation, and it served as the impetus for wr
 transcriber_bot. Additional applications include helping people on reddit read the contents of 
 reddit image posts if imgur is blocked, or potentially helping vision-impaired reddit users (using 
 text-to-speech browsers) read the contents of images.
+
+## Bugs
+
+* Only some imgur albums work. It appears imgur links with "gallery" work 
+  (https://imgur.com/gallery/2OMsd), but not other links, such as (https://imgur.com/a/NyHaeak)
