@@ -14,8 +14,13 @@ transcriber_bot is a bot that transcribes reddit images
     * password: reddit password
     * subreddits: list of subreddits to run bot on
 2. Rename config_default.ini to config.ini
-2. Run transcriber_bot.py.
-3. Enjoy!
+3. Run transcriber_bot.py.
+4. Enjoy!
+
+## How to run tests
+
+1. run ./bin/test.sh
+2. That's it. Enjoy!
 
 ## What is it
 
