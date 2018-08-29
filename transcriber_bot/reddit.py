@@ -40,8 +40,9 @@ def check_reddit_data(reddit_url):
         else:
             return False
         reddit_data = requests.get(reddit_url, timeout=MAX_TIMEOUT)
-        # return true if statis code is not 404
-        return reddit_data.status_code != 404
+        print(reddit_data.status_code)
+        # return true only if status code is ok (starts with 2)
+        return reddit_data.status_code / 100 == 2
     except requests.Timeout:
         print("Request timed out")
         return False

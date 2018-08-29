@@ -1,9 +1,11 @@
 """Contains PRAW reddit bot code"""
 
+import time
 import praw
 from transcriber_bot.imgur import is_url_imgur, get_imgur_urls
 from transcriber_bot.reddit import is_url_reddit, get_reddit_urls
 from transcriber_bot.ocr import get_image_text
+from praw.exceptions import APIException, ClientException
 
 BOT_HEADER = "A text transcription of"
 BOT_FOOTER = ("Powered by [transcriber_bot]" +
@@ -11,6 +13,8 @@ BOT_FOOTER = ("Powered by [transcriber_bot]" +
 CONTINUED_MSG = "cont."
 MAX_REPLY_LENGTH = 5000
 DEBUG_MAX_RUNS = 2
+API_PAUSE_TIME = 60
+API_MAX_RETRIES = 2
 
 class Bot(object):
     """Class for transcriber bot"""
@@ -58,24 +62,29 @@ class Bot(object):
             print('Bot could not be initialized', error)
             return
 
-    def run(self):
+    def run(self): #pylint: disable=too-many-branches
         """runs bot
 
         :returns: true when completed
         :raises: RuntimeException saying bot is not initialized
 
         """
-        if not self.initialized:
-            raise RuntimeError('Bot not initialized')
+        if not self.initialized or not self.subreddits:
+            raise RuntimeError('Bot not initialized correctly')
 
-        try:
-            run_count = 0
+        run_count = 0
 
-            # loop through submissions in subreddit stream. If in debug, only
-            # run DEBUG_MAX_RUNS times total
-            for submission in self.subreddits.submissions():
+        # loop through submissions in subreddit stream. If in debug, only
+        # run DEBUG_MAX_RUNS times total
+        for submission in self.subreddits.submissions():
+            try:
+                if self.debug:
+                    print("run count for debug")
+                    print(run_count)
+
                 # if debug, increment run_count until DEBUG_MAX_RUNS and break
                 if self.debug and run_count >= DEBUG_MAX_RUNS:
+                    print("ending bot because DEBUG_MAX_RUNS reached")
                     break
 
                 if self.post_log.is_in(submission.id):
@@ -107,12 +116,41 @@ class Bot(object):
                 # reply to submission
                 self._reply_to_submission(submission, result_text)
 
-            return True
-        except BaseException as error:
-            print('Bot run error', error)
-            # print error, return false if on debug
-            if self.debug:
-                return False
+            except APIException as error:
+                # if api exception, retry posting API_MAX_RETRIES times
+                print('Bot API error', error)
+
+                time.sleep(API_PAUSE_TIME)
+
+                # success flag for debug
+                success = False
+
+                for _ in range(API_MAX_RETRIES):
+                    try:
+                        self._reply_to_submission(submission, result_text)
+                        # set success flag to true if works
+                        success = True
+                        break
+                    except BaseException as error:
+                        print('An error occoured: ', error)
+                        time.sleep(API_PAUSE_TIME)
+
+                if self.debug and not success:
+                    # if the retries failed and debug is enabled, return false
+                    return False
+
+            except ClientException as error:
+                print('Bot client error', error)
+                # time.sleep(API_PAUSE_TIME)
+                if self.debug:
+                    return False
+            except BaseException as error:
+                print('Bot run error', error)
+                # print error, return false if on debug
+                if self.debug:
+                    return False
+
+        return True
 
     def _reply_to_submission(self, submission, result_text):
         """process a new reddit message, reply to it, add it to log

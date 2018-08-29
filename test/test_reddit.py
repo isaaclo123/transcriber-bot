@@ -1,4 +1,4 @@
-"""Helper methods for managing reddit links"""
+"""Contains test code for managing reddit links"""
 
 from transcriber_bot.reddit import (
     is_url_reddit,

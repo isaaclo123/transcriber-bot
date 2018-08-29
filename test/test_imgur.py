@@ -1,4 +1,4 @@
-"""Helper methods for managing imgur links"""
+"""Contains test code for imgur link handling"""
 
 from transcriber_bot.imgur import is_url_imgur, get_imgur_data, get_imgur_urls
 
